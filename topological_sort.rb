@@ -6,7 +6,6 @@ class TopologicalSort
   def count(graph)
     @hash_table = {}
     p count_topological_sort(graph)
-    @hash_table = nil
   end
 
   private
@@ -40,6 +39,54 @@ class TopologicalSort
   end
 end
 
+class TopologicalSort2
+  def count(graph)
+    @graph = graph.freeze
+    @hash_table = {}
+    p count_topological_sort
+  end
+
+  private
+
+  def count_topological_sort(node_binary = nil)
+    node_binary = '1' * @graph.nodes.count unless node_binary
+
+    unless node_binary.include?('1')
+      return 1
+    end
+
+    @hash_table[node_binary] ||= begin
+      node_binaries_removing_node_not_having_from_nodes(node_binary).map { |next_binary|
+        count_topological_sort(next_binary)
+      }.inject(:+)
+    end
+  end
+
+  def node_binaries_removing_node_not_having_from_nodes(node_binary)
+    _graph = @graph.dup
+
+    removed_node_ids(node_binary).each do |node_id|
+      _graph.remove_node_and_its_direction(node_id)
+    end
+
+    _graph.nodes_that_have_no_from_nodes.map do |node|
+      _node_binary = node_binary.dup
+      _node_binary[_node_binary.size - node.id] = '0'
+      _node_binary
+    end
+  end
+
+  def removed_node_ids(node_binary)
+    ids = []
+
+    node_binary.each_char.with_index do |char, i|
+      ids << (node_binary.size - i) if char == '0'
+    end
+
+    ids
+  end
+end
+
 class Graph
   attr_reader :nodes
 
@@ -67,7 +114,10 @@ class Graph
   def remove_node_and_its_direction(node_id)
     node = find(node_id)
     raise 'cannot remove non-existent node' if node == nil
-    raise 'cannot remove the node which have from_nodes.' if node.from_node_ids.any?
+
+    node.from_node_ids.each do |from_node_id|
+      find(from_node_id).to_node_ids.delete(node.id)
+    end
 
     node.to_node_ids.each do |to_node_id|
       find(to_node_id).from_node_ids.delete(node.id)
@@ -174,4 +224,4 @@ input_text = <<EOS
 EOS
 
 graph = GraphCreator.new.exec(input_text)
-TopologicalSort.new.count(graph)
+TopologicalSort2.new.count(graph)
