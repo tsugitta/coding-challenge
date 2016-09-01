@@ -3,6 +3,12 @@ class TopologicalSort
     topological_sort(graph)
   end
 
+  def count(graph)
+    @hash_table = {}
+    p count_topological_sort(graph)
+    @hash_table = nil
+  end
+
   private
 
   def topological_sort(graph, sorted_node_ids = [])
@@ -18,6 +24,19 @@ class TopologicalSort
       _graph.remove_node_and_its_direction(node.id)
       topological_sort(_graph, _sorted_node_ids)
     end
+  end
+
+  def count_topological_sort(graph)
+    if graph.is_empty?
+      return 1
+    end
+
+    @hash_table[graph.nodes_binary_value] ||= graph.nodes_that_have_no_from_nodes.map { |node|
+      _graph = graph.dup
+
+      _graph.remove_node_and_its_direction(node.id)
+      count_topological_sort(_graph)
+    }.inject(:+)
   end
 end
 
@@ -59,6 +78,17 @@ class Graph
 
   def is_empty?
     @nodes.empty?
+  end
+
+  # can be used only if id is sequencial number and its beginning is 1
+  def nodes_binary_value
+    binary = '0' * @nodes.map(&:id).max
+
+    @nodes.each do |node|
+      binary[@nodes.count - node.id] = '1'
+    end
+
+    binary
   end
 end
 
@@ -144,4 +174,4 @@ input_text = <<EOS
 EOS
 
 graph = GraphCreator.new.exec(input_text)
-TopologicalSort.new.exec(graph)
+TopologicalSort.new.count(graph)
